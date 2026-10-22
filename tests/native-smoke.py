@@ -35,7 +35,7 @@ if os_release()['ID'] == 'ubuntu':
     debian = source / 'debian'
     (debian / 'source').mkdir(parents=True)
     (debian / 'source/format').write_text('3.0 (quilt)\n')
-    (debian / 'changelog').write_text('php-lrr-fixture (7.2.34-1) bionic; urgency=medium\n\n  * Native test fixture.\n\n -- Test <test@example.invalid>  Thu, 22 Oct 2026 00:00:00 +0000\n')
+    (debian / 'changelog').write_text('php-lrr-fixture (7.2.34-1) bionic; urgency=medium\n\n  * Native test fixture with UTF-8 café text.\n\n -- Test <test@example.invalid>  Thu, 22 Oct 2026 00:00:00 +0000\n', encoding='utf-8')
     (debian / 'control').write_text('Source: php-lrr-fixture\nSection: devel\nPriority: optional\nMaintainer: Test <test@example.invalid>\nBuild-Depends: debhelper (>= 9), gcc\nStandards-Version: 3.9.8\n\nPackage: php-lrr-fixture\nArchitecture: any\nDepends: ${shlibs:Depends}, ${misc:Depends}\nDescription: Owned native packaging fixture\n')
     (debian / 'compat').write_text('9\n')
     (debian / 'rules').write_text('#!/usr/bin/make -f\n%:\n\tdh $@\noverride_dh_auto_build:\n\tgcc main/example.c -o lrr-fixture\noverride_dh_auto_test:\n\ttest "$$(./lrr-fixture)" = patched\noverride_dh_auto_install:\n\tinstall -D -m755 lrr-fixture debian/php-lrr-fixture/usr/bin/lrr-fixture\n')
@@ -58,7 +58,7 @@ License: MIT
 Source0: php-lrr-fixture-7.2.34.tar.gz
 
 %description
-Owned native packaging fixture.
+Owned native packaging fixture with UTF-8 café text.
 
 %prep
 %setup -q
@@ -74,7 +74,7 @@ test "$(./lrr-fixture)" = patched
 
 %files
 /usr/bin/lrr-fixture
-''')
+''', encoding='utf-8')
     with patch.object(sources, 'patch_set', return_value=({}, [('security.patch', security_patch)])):
         sources.prepare_rpm(spec, inputs, root / 'prepared', '7.2', root / 'cache', [])
 

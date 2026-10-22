@@ -7,12 +7,13 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from runtime_rebuilder import artifacts, cli, host, sources
-from runtime_rebuilder.common import Error, relative_path, sha256, write_json
+from runtime_rebuilder.common import Error, relative_path, run, sha256, write_json
 
 
 PATCH = b'''--- a/main/example.c
@@ -50,6 +51,14 @@ class Boundaries(Workspace):
     def test_cli_failure_is_nonzero(self):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(cli.main(['verify', '--manifest', str(self.root / 'absent')]), 2)
+
+    def test_utf8_subprocess_output_under_c_locale(self):
+        result = run([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(bytes([99,97,102,195,169]))'])
+        self.assertEqual(result, 'café')
+
+    def test_relative_runtime_refused_before_inventory(self):
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(cli.main(['inventory', '--runtime', 'relative/php']), 2)
 
     def test_build_refuses_root_and_missing_isolation_confirmation(self):
         for root, confirmed in ((0, True), (1000, False)):

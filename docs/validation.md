@@ -10,7 +10,7 @@ The Ubuntu 18.04 container also creates and reads an actual Debian binary packag
 
 Each native job does the following:
 
-1. Run the unit suite on the distribution's Python 3.6.
+1. Run the unit suite on the distribution's Python 3.6 under `LC_ALL=C`, including UTF-8 packaging text and subprocess output.
 2. Prepare a synthetic source package with an owned C fixture and test patch.
 3. Run the CLI's native build command as an unprivileged user.
 4. Check that the compiled fixture executes its patched behavior.

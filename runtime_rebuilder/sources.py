@@ -14,7 +14,7 @@ from .common import Error, os_release, run, sha256, write_json
 
 
 def catalog():
-    return json.loads(Path(__file__).with_name('catalog.json').read_text())
+    return json.loads(Path(__file__).with_name('catalog.json').read_text(encoding='utf-8'))
 
 
 def patch_set(branch, cache):
@@ -97,7 +97,7 @@ def validate_patch_paths(tree, content):
 
 
 def php_branch(tree):
-    header = (Path(tree) / 'main/php_version.h').read_text()
+    header = (Path(tree) / 'main/php_version.h').read_text(encoding='utf-8')
     value = re.search(r'^#define PHP_VERSION\s+"(\d+\.\d+)\.', header, re.MULTILINE)
     if not value:
         raise Error('Cannot determine PHP branch from main/php_version.h')
@@ -124,7 +124,7 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
                 if base.is_symlink() or any(p.is_symlink() for p in base.rglob('*')):
                     raise Error('Debian packaging/quilt metadata must not contain symlinks')
             fmt = tree / 'debian/source/format'
-            if not fmt.is_file() or fmt.read_text().strip() != '3.0 (quilt)':
+            if not fmt.is_file() or fmt.read_text(encoding='utf-8').strip() != '3.0 (quilt)':
                 raise Error('Debian preparation requires source format 3.0 (quilt)')
             run(['dpkg-source', '--before-build', '.'], tree)
         states = []
@@ -149,7 +149,7 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
             if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.+]*', revision):
                 raise Error('Revision must be an alphanumeric Debian version suffix')
             changelog = tree / 'debian/changelog'
-            original = changelog.read_text()
+            original = changelog.read_text(encoding='utf-8')
             match = re.match(r'([^\s]+) \(([^)]+)\) ([^;]+);', original)
             if not match:
                 raise Error('Cannot parse Debian changelog')
@@ -160,7 +160,7 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
             entry = ('{} ({}) {}; urgency=high\n\n'
                      '  * Backport CVE-2026-109618 and CVE-2026-109619.\n\n'
                      ' -- Local Builder <builder@localhost>  {}\n\n').format(name, new, suite, date)
-            changelog.write_text(entry + original)
+            changelog.write_text(entry + original, encoding='utf-8')
         record = dict(schema=1, kind='deb' if debian else 'upstream', branch=branch,
                       patch_source=row, patches=states,
                       warning='Minimal legacy backport disables session upload-progress callbacks')
@@ -179,7 +179,7 @@ def prepare_rpm(spec, sources, output, branch, cache, defines, revision='rebuild
         raise Error('Output must be a new directory outside SOURCES')
     if not re.fullmatch(r'[A-Za-z0-9]+', revision):
         raise Error('RPM revision must be alphanumeric')
-    text = spec.read_text()
+    text = spec.read_text(encoding='utf-8')
     if len(re.findall(r'^%prep\s*$', text, re.MULTILINE)) != 1 or len(re.findall(r'^%build\s*$', text, re.MULTILINE)) != 1:
         raise Error('Spec must have one plain %prep and one plain %build section')
     if text.index('\n%prep') > text.index('\n%build'):
@@ -231,7 +231,7 @@ def prepare_rpm(spec, sources, output, branch, cache, defines, revision='rebuild
         text = re.sub(r'^%build\s*$', '\n# Apply security backports after vendor preparation.\n' +
                       '\n'.join(commands) + '\n\n%build', text, count=1, flags=re.MULTILINE)
         target = top / 'SPECS' / spec.name
-        target.write_text(text)
+        target.write_text(text, encoding='utf-8')
         record = dict(schema=1, kind='rpm', branch=branch, spec=spec.name,
                       defines=defines, patch_source=row, input_spec_sha256=sha256(spec))
         write_json(top / '.rebuild-prepared.json', record)
@@ -245,7 +245,7 @@ def build(tree, output, in_builder=False):
     if not in_builder or os.geteuid() == 0:
         raise Error('Build as a non-root user in a disposable matching builder; pass --in-builder')
     tree, output = Path(tree).resolve(), Path(output).absolute()
-    record = json.loads((tree / '.rebuild-prepared.json').read_text())
+    record = json.loads((tree / '.rebuild-prepared.json').read_text(encoding='utf-8'))
     kind = record['kind']
     if kind not in ('rpm', 'deb'):
         raise Error('Upstream trees have no native build recipe; use existing packaging')

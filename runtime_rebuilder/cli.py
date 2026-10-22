@@ -53,6 +53,8 @@ def main(argv=None):
         cli.print_help()
         return 2
     try:
+        if any(not Path(p).is_absolute() for p in getattr(args, 'runtime', [])):
+            raise Error('--runtime requires an absolute path')
         if args.command == 'inventory':
             result = host.inventory(args.runtime)
         elif args.command == 'audit':
@@ -69,7 +71,7 @@ def main(argv=None):
         elif args.command == 'manifest':
             result = artifacts.manifest(args.packages)
         elif args.command == 'verify':
-            result = artifacts.verify(json.loads(Path(args.manifest).read_text()))
+            result = artifacts.verify(json.loads(Path(args.manifest).read_text(encoding='utf-8')))
         if args.command in ('manifest', 'inventory', 'audit', 'verify', 'patches') and args.output:
             write_json(args.output, result)
         else:

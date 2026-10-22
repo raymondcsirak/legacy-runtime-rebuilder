@@ -56,7 +56,7 @@ def process_audit(proc_root='/proc', extra_runtimes=()):
             continue
         selected = False
         try:
-            comm = (proc / 'comm').read_text().strip()
+            comm = (proc / 'comm').read_text(encoding='utf-8').strip()
             selected = bool(PHP_NAME.fullmatch(comm) or SERVER_NAME.fullmatch(comm))
             try:
                 executable = os.readlink(str(proc / 'exe'))
@@ -73,7 +73,7 @@ def process_audit(proc_root='/proc', extra_runtimes=()):
             row['executable_sha256'] = sha256(proc / 'exe')
             row['disk_sha256'] = sha256(disk) if disk.is_file() else None
             row['stale_executable'] = executable.endswith(' (deleted)') or row['executable_sha256'] != row['disk_sha256']
-            for line in (proc / 'maps').read_text().splitlines():
+            for line in (proc / 'maps').read_text(encoding='utf-8').splitlines():
                 fields = line.split(None, 5)
                 if len(fields) != 6 or not fields[5].startswith('/'):
                     continue
