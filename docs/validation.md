@@ -4,7 +4,7 @@ This is the first public version. Treat it as an operator toolkit with an explic
 
 ## Automated checks
 
-The unit suite covers patch direction and idempotency, failed preparation cleanup, source preservation, symlink/traversal rejection, cached archive tampering, report permissions, root/build-OS guards, Debian/Remi runtime names, stale mapped-module device/inode detection, package hardlinks, installed-file tampering, and CLI error codes.
+The unit suite covers patch direction and idempotency, failed preparation cleanup, source preservation, symlink/traversal rejection, cached archive tampering, report permissions, root/build-OS guards, Debian/Remi runtime names, stale mapped-module device/inode detection, package hardlinks, installed-file tampering, and CLI error codes. A live Linux test compiles an owned PHP-named fixture, loads a shared library, and checks real `/proc` detection after replacing its mapped library and executable.
 
 The Ubuntu 18.04 container also creates and reads an actual Debian binary package. That one format-specific unit test is skipped on CentOS, where dpkg is absent. Both native container jobs exercise the actual native format separately.
 
