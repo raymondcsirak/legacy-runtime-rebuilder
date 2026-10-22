@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+from runtime_rebuilder.cli import main
+
+raise SystemExit(main())
