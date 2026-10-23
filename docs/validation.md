@@ -29,6 +29,21 @@ The PHP 7.2 preparation command was exercised against the original affected file
 
 The previous operational remediation rebuilt and deployed multiple PHP branches on CentOS 7 with focused compatibility checks. That preceded this CLI. It is context for the procedure, not evidence that this CLI has rebuilt every branch or every supplier package.
 
+## Fresh Docker retest on 23 October 2026
+
+Commit `5fb169f81f749511a5e8683b81ad022b7f7570c6` was tested in fresh images built with `--pull --no-cache` from the repository Dockerfiles.
+
+| Environment | Suite | Native fixture build/install | Stock PHP inventory and live-process checks |
+|---|---|---|---|
+| CentOS 7.9, amd64, Python 3.6 | 23 passed, one dpkg-specific skip | Passed, including artifact verification and tamper rejection | Passed with PHP 5.4.16 |
+| Ubuntu 18.04, arm64, Python 3.6 | 24 passed | Passed, including artifact verification and tamper rejection | Passed with PHP 7.2.24-0ubuntu0.18.04.17 |
+
+Both environments also downloaded the pinned PHP 7.2 source-packaging archive into an empty cache over verified HTTPS. The prerequisite and security patches applied to real PHP 7.2.34 affected source files with zero fuzz. Both prepared outputs matched the expected patched files.
+
+The stock PHP checks copied the installed CLI into a private temporary directory, ran that copy, and replaced only the temporary executable. Inventory found the installed PHP packages and the explicit runtime path. The audit first observed current code, then returned exit code `3` and marked the old process stale after replacement. Installed PHP executables were not modified.
+
+The PHP 5.4 check covers discovery and process auditing only. There is no PHP 5.4 backport in this catalog. The stock Ubuntu PHP 7.2.24 check likewise establishes runtime discovery, not successful patching of its source package. Neither stock runtime is claimed fixed by these checks.
+
 ## Checks the operator must still perform
 
 - Retrieve and authenticate the exact supplier source and existing patch stack.
