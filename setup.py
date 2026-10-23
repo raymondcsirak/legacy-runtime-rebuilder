@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='legacy-runtime-rebuilder', version='0.1.0',
+setup(name='legacy-runtime-rebuilder', version='0.1.1',
       description='Prepare and verify legacy PHP security rebuilds',
       packages=['runtime_rebuilder'], package_data={'runtime_rebuilder': ['catalog.json']},
       python_requires='>=3.6', license='MIT',

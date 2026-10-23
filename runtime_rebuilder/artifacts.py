@@ -76,11 +76,11 @@ def package_manifest(path):
     if path.suffix == '.rpm' and not path.name.endswith('.src.rpm'):
         fields = run(['rpm', '-qp', '--qf', '%{NAME}\t%{EPOCHNUM}:%{VERSION}-%{RELEASE}\t%{ARCH}', path]).strip().split('\t')
         command, kind = ['rpm2cpio', str(path)], 'rpm'
-    elif path.suffix == '.deb':
+    elif path.suffix in ('.deb', '.ddeb'):
         fields = [run(['dpkg-deb', '-f', path, field]).strip() for field in ('Package', 'Version', 'Architecture')]
         command, kind = ['dpkg-deb', '--fsys-tarfile', str(path)], 'deb'
     else:
-        raise Error('Expected a binary .rpm or .deb: ' + str(path))
+        raise Error('Expected a binary .rpm, .deb, or .ddeb: ' + str(path))
     if len(fields) != 3:
         raise Error('Unexpected package metadata')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)

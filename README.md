@@ -68,7 +68,9 @@ python3 rebuildctl build \
 
 The tool adds the backports to the existing quilt stack and appends a distinct changelog version suffix. It checks that the new Debian version sorts above the source version. The native build uses `dpkg-buildpackage -us -uc -b`, retaining the package's normal checks. No dependency installation is attempted by the CLI.
 
-Canonical's Bionic PHP 7.2.24 and Surý's PHP 7.2.34 differ. An archived patch that does not match is a preparation failure, not permission to force its hunks into place. See [the operator procedure](docs/operations.md).
+Canonical's Bionic PHP 7.2.24 and Surý's PHP 7.2.34 differ. Version `7.2.24-0ubuntu0.18.04.17` has a narrowly pinned adaptation: the CLI checks six vendor VM input hashes, rebases the allocation guards from the published patch, and regenerates the interpreter with the vendor's `Zend/zend_vm_gen.php`. This requires the `php7.2-cli` bootstrap package in the builder. It runs with `-n` to ignore PHP INI files. Opcode definitions must remain unchanged, and the generated diff must contain only the published allocation guards. Unknown input files are refused.
+
+Other source baselines still need an independently reviewed adaptation if the standard patches do not match. Do not force failed hunks into place. See [the operator procedure](docs/operations.md).
 
 ## Rebuild CentOS 7 packages
 
@@ -102,7 +104,7 @@ sudo python3 rebuildctl verify --manifest manifest.json
 sudo python3 rebuildctl audit
 ```
 
-The same commands accept `.deb` files. `manifest` reads ELF payloads without extracting archive paths onto disk. `verify` checks installed package versions and SHA256 hashes against that manifest. Include all installed packages rebuilt from each affected source family. A hand-selected subset cannot establish full-host coverage.
+The same commands accept `.deb` files and optional `.ddeb` debug packages. Debian builds retain both types. Repeated builds can reproduce identical package bytes; the CLI still collects packages that the native build replaced. `manifest` reads ELF payloads without extracting archive paths onto disk. `verify` checks installed package versions and SHA256 hashes against that manifest. Include all installed packages rebuilt from each affected source family. A hand-selected subset cannot establish full-host coverage.
 
 The manifest records candidate archive hashes, but it is not a signature. Transfer it through a trusted channel and retain build/source provenance. Before installation, verify the candidate files themselves against those recorded archive hashes. The tool does not attest an untrusted build.
 
@@ -126,6 +128,6 @@ docker run --platform linux/amd64 --rm --user 0 lrr-test:centos7 sh tests/instal
 
 These test images install build tools and an owned C test package only inside disposable containers. Compilation runs as an unprivileged user. The root test harness then installs that fixture, checks package/file identity, and deliberately alters the fixture to check rejection. The CLI retains no automatic production mutation commands. Contributions need a regression test and clear supplier/version coverage. Use synthetic reports without real hostnames, credentials, customer names, or application configuration.
 
-See [validation scope](docs/validation.md) before relying on a new branch or vendor source package. The native fixture builds exercise package preparation, compilation, artifact hashing, and tamper detection. They do not compile every PHP/vendor combination.
+Full vendor PHP 7.2 builds were also tested on Ubuntu 18.04 arm64 and CentOS 7 amd64, including candidate installation and real Apache/FPM requests. See [validation scope](docs/validation.md) for exact versions, explained test failures, and limits, and [the vendor build recipe](docs/vendor-builds.md) to repeat those checks. The regular CI jobs use native fixtures; they do not compile every PHP/vendor combination.
 
 MIT license applies to this project's code. Downloaded patches retain their publishers' licenses and authorship. See [third-party provenance](THIRD_PARTY.md).
