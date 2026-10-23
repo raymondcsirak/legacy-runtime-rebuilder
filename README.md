@@ -1,4 +1,4 @@
-# Legacy Runtime Rebuilder
+# PHP2Shell Legacy Patcher
 
 A small CLI for operators rebuilding legacy PHP after **PHP2Shell**, CVE-2026-109618 and CVE-2026-109619.
 
