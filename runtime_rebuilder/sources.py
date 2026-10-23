@@ -127,6 +127,10 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
             if not fmt.is_file() or fmt.read_text(encoding='utf-8').strip() != '3.0 (quilt)':
                 raise Error('Debian preparation requires source format 3.0 (quilt)')
             run(['dpkg-source', '--before-build', '.'], tree)
+        adaptation = None
+        if debian and branch == '7.2':
+            from .profiles import bionic_patches
+            patches, adaptation = bionic_patches(tree, patches)
         states = []
         for name, content in patches:
             validate_patch_paths(tree, content)
@@ -144,7 +148,7 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
                     run(['quilt', 'push'], tree, env)
             else:
                 state = apply_patch(tree, content)
-            states.append(dict(name=name, state=state))
+            states.append(dict(name=name, state=state, sha256=hashlib.sha256(content).hexdigest()))
         if debian:
             if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.+]*', revision):
                 raise Error('Revision must be an alphanumeric Debian version suffix')
@@ -164,6 +168,8 @@ def prepare_tree(source, output, branch, cache, revision='rebuild1'):
         record = dict(schema=1, kind='deb' if debian else 'upstream', branch=branch,
                       patch_source=row, patches=states,
                       warning='Minimal legacy backport disables session upload-progress callbacks')
+        if adaptation:
+            record['adaptation'] = adaptation
         write_json(tree / '.rebuild-prepared.json', record)
         os.rename(str(tree), str(output))
         return record
@@ -263,14 +269,20 @@ def build(tree, output, in_builder=False):
         command += [str(tree / 'SPECS' / record['spec'])]
     else:
         command = ['dpkg-buildpackage', '-us', '-uc', '-b']
-    before = {str(p): sha256(p) for p in tree.parent.glob('*.deb')} if kind == 'deb' else {}
+    def artifact_state(path):
+        info = path.stat()
+        return info.st_ino, info.st_mtime_ns, info.st_ctime_ns
+
+    before = {str(p): artifact_state(p) for p in tree.parent.iterdir()
+              if p.suffix in ('.deb', '.ddeb')} if kind == 'deb' else {}
     with (output / 'build.log').open('wb') as log:
         status = subprocess.call(command, cwd=str(tree), stdout=log, stderr=subprocess.STDOUT,
                                  env=dict(os.environ, LC_ALL='C', LANG='C'))
     if status:
         raise Error('Build failed; inspect ' + str(output / 'build.log'))
     files = (list((tree / 'RPMS').rglob('*.rpm')) + list((tree / 'SRPMS').glob('*.rpm'))
-             if kind == 'rpm' else [p for p in tree.parent.glob('*.deb') if before.get(str(p)) != sha256(p)])
+             if kind == 'rpm' else [p for p in tree.parent.iterdir() if p.suffix in ('.deb', '.ddeb')
+                                   and before.get(str(p)) != artifact_state(p)])
     if not files:
         raise Error('Build produced no package artifacts')
     copied = []

@@ -230,7 +230,7 @@ class ArtifactVerification(Workspace):
     @unittest.skipUnless(shutil.which('dpkg-deb'), 'dpkg-deb required')
     def test_actual_deb_manifest(self):
         tree = self.root / 'package'
-        (tree / 'DEBIAN').mkdir(parents=True)
+        (tree / 'DEBIAN').mkdir(mode=0o755, parents=True)
         (tree / 'usr/bin').mkdir(parents=True)
         (tree / 'DEBIAN/control').write_text('Package: php-test\nVersion: 1.0-1\nArchitecture: all\nMaintainer: Test <test@example.invalid>\nDescription: test fixture\n')
         binary = tree / 'usr/bin/php-test'
@@ -240,6 +240,9 @@ class ArtifactVerification(Workspace):
         result = artifacts.manifest([package])
         self.assertEqual(result['packages'][0]['files']['usr/bin/php-test'], sha256(binary))
         self.assertEqual(artifacts.verify(result, tree, False)['status'], 'matches-artifacts')
+        debug_package = self.root / 'test.ddeb'
+        shutil.copy2(str(package), str(debug_package))
+        self.assertEqual(artifacts.manifest([debug_package])['packages'][0]['files'], result['packages'][0]['files'])
 
 
 if __name__ == '__main__':

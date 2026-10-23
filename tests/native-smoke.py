@@ -80,6 +80,10 @@ test "$(./lrr-fixture)" = patched
 
 command = [sys.executable, str(Path(__file__).resolve().parents[1] / 'rebuildctl')]
 result = json.loads(run(command + ['build', '--tree', root / 'prepared', '--output', root / 'artifacts', '--in-builder']))
+if os_release()['ID'] == 'ubuntu':
+    # Reproducible builds can replace a package with byte-identical content.
+    repeated = json.loads(run(command + ['build', '--tree', root / 'prepared', '--output', root / 'repeat-artifacts', '--in-builder']))
+    assert repeated['artifacts'] == result['artifacts']
 binary_packages = [p for p in (root / 'artifacts').iterdir() if p.suffix in ('.deb', '.rpm') and not p.name.endswith('.src.rpm')]
 run(command + ['manifest'] + binary_packages + ['--output', root / 'manifest.json'])
 record = json.loads((root / 'manifest.json').read_text())
